@@ -7,6 +7,7 @@ package mux
 import (
 	"bytes"
 	"fmt"
+	"gitee.com/zhaochuninhefei/gmgo/gmhttp"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -171,7 +172,7 @@ type routeRegexp struct {
 }
 
 // Match matches the regexp against the URL host or path.
-func (r *routeRegexp) Match(req *http.Request, match *RouteMatch) bool {
+func (r *routeRegexp) Match(req *gmhttp.Request, match *RouteMatch) bool {
 	if r.regexpType == regexpTypeHost {
 		host := getHost(req)
 		if r.wildcardHostPort {
@@ -225,7 +226,7 @@ func (r *routeRegexp) url(values map[string]string) (string, error) {
 // getURLQuery returns a single query parameter from a request URL.
 // For a URL with foo=bar&baz=ding, we return only the relevant key
 // value pair for the routeRegexp.
-func (r *routeRegexp) getURLQuery(req *http.Request) string {
+func (r *routeRegexp) getURLQuery(req *gmhttp.Request) string {
 	if r.regexpType != regexpTypeQuery {
 		return ""
 	}
@@ -275,7 +276,7 @@ func findFirstQueryKey(rawQuery, key string) (value string, ok bool) {
 	return "", false
 }
 
-func (r *routeRegexp) matchQueryString(req *http.Request) bool {
+func (r *routeRegexp) matchQueryString(req *gmhttp.Request) bool {
 	return r.regexp.MatchString(r.getURLQuery(req))
 }
 
@@ -321,7 +322,7 @@ type routeRegexpGroup struct {
 }
 
 // setMatch extracts the variables from the URL once a route matches.
-func (v routeRegexpGroup) setMatch(req *http.Request, m *RouteMatch, r *Route) {
+func (v routeRegexpGroup) setMatch(req *gmhttp.Request, m *RouteMatch, r *Route) {
 	// Store host variables.
 	if v.host != nil {
 		host := getHost(req)
@@ -374,7 +375,7 @@ func (v routeRegexpGroup) setMatch(req *http.Request, m *RouteMatch, r *Route) {
 // getHost tries its best to return the request host.
 // According to section 14.23 of RFC 2616 the Host header
 // can include the port number if the default value of 80 is not used.
-func getHost(r *http.Request) string {
+func getHost(r *gmhttp.Request) string {
 	if r.URL.IsAbs() {
 		return r.URL.Host
 	}

@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"gitee.com/zhaochuninhefei/gmgo/gmhttp"
 	"net/http"
 	"strings"
 )
@@ -8,15 +9,15 @@ import (
 // MiddlewareFunc is a function which receives an http.Handler and returns another http.Handler.
 // Typically, the returned handler is a closure which does something with the http.ResponseWriter and http.Request passed
 // to it, and then calls the handler passed as parameter to the MiddlewareFunc.
-type MiddlewareFunc func(http.Handler) http.Handler
+type MiddlewareFunc func(gmhttp.Handler) gmhttp.Handler
 
 // middleware interface is anything which implements a MiddlewareFunc named Middleware.
 type middleware interface {
-	Middleware(handler http.Handler) http.Handler
+	Middleware(handler gmhttp.Handler) gmhttp.Handler
 }
 
 // Middleware allows MiddlewareFunc to implement the middleware interface.
-func (mw MiddlewareFunc) Middleware(handler http.Handler) http.Handler {
+func (mw MiddlewareFunc) Middleware(handler gmhttp.Handler) gmhttp.Handler {
 	return mw(handler)
 }
 
@@ -37,8 +38,8 @@ func (r *Router) useInterface(mw middleware) {
 // the route. Routes that do not explicitly handle OPTIONS requests will not be processed
 // by the middleware. See examples for usage.
 func CORSMethodMiddleware(r *Router) MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	return func(next gmhttp.Handler) gmhttp.Handler {
+		return gmhttp.HandlerFunc(func(w gmhttp.ResponseWriter, req *gmhttp.Request) {
 			allMethods, err := getAllMethodsForRoute(r, req)
 			if err == nil {
 				for _, v := range allMethods {
@@ -55,7 +56,7 @@ func CORSMethodMiddleware(r *Router) MiddlewareFunc {
 
 // getAllMethodsForRoute returns all the methods from method matchers matching a given
 // request.
-func getAllMethodsForRoute(r *Router, req *http.Request) ([]string, error) {
+func getAllMethodsForRoute(r *Router, req *gmhttp.Request) ([]string, error) {
 	var allMethods []string
 
 	for _, route := range r.routes {

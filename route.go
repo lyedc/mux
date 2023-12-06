@@ -7,7 +7,7 @@ package mux
 import (
 	"errors"
 	"fmt"
-	"net/http"
+	"gitee.com/zhaochuninhefei/gmgo/gmhttp"
 	"net/url"
 	"regexp"
 	"strings"
@@ -16,7 +16,7 @@ import (
 // Route stores information to match a request and build URLs.
 type Route struct {
 	// Request handler for the route.
-	handler http.Handler
+	handler gmhttp.Handler
 	// If true, this route never matches: it is only used to build URLs.
 	buildOnly bool
 	// The name used to build URLs.
@@ -38,7 +38,7 @@ func (r *Route) SkipClean() bool {
 }
 
 // Match matches the route against the request.
-func (r *Route) Match(req *http.Request, match *RouteMatch) bool {
+func (r *Route) Match(req *gmhttp.Request, match *RouteMatch) bool {
 	if r.buildOnly || r.err != nil {
 		return false
 	}
@@ -125,7 +125,7 @@ func (r *Route) BuildOnly() *Route {
 // Handler --------------------------------------------------------------------
 
 // Handler sets a handler for the route.
-func (r *Route) Handler(handler http.Handler) *Route {
+func (r *Route) Handler(handler gmhttp.Handler) *Route {
 	if r.err == nil {
 		r.handler = handler
 	}
@@ -133,12 +133,12 @@ func (r *Route) Handler(handler http.Handler) *Route {
 }
 
 // HandlerFunc sets a handler function for the route.
-func (r *Route) HandlerFunc(f func(http.ResponseWriter, *http.Request)) *Route {
-	return r.Handler(http.HandlerFunc(f))
+func (r *Route) HandlerFunc(f func(gmhttp.ResponseWriter, *gmhttp.Request)) *Route {
+	return r.Handler(gmhttp.HandlerFunc(f))
 }
 
 // GetHandler returns the handler for the route, if any.
-func (r *Route) GetHandler() http.Handler {
+func (r *Route) GetHandler() gmhttp.Handler {
 	return r.handler
 }
 
@@ -169,7 +169,7 @@ func (r *Route) GetName() string {
 
 // matcher types try to match a request.
 type matcher interface {
-	Match(*http.Request, *RouteMatch) bool
+	Match(*gmhttp.Request, *RouteMatch) bool
 }
 
 // addMatcher adds a matcher to the route.
@@ -233,7 +233,7 @@ func (r *Route) addRegexpMatcher(tpl string, typ regexpType) error {
 // headerMatcher matches the request against header values.
 type headerMatcher map[string]string
 
-func (m headerMatcher) Match(r *http.Request, match *RouteMatch) bool {
+func (m headerMatcher) Match(r *gmhttp.Request, match *RouteMatch) bool {
 	return matchMapWithString(m, r.Header, true)
 }
 
@@ -258,7 +258,7 @@ func (r *Route) Headers(pairs ...string) *Route {
 // headerRegexMatcher matches the request against the route given a regex for the header
 type headerRegexMatcher map[string]*regexp.Regexp
 
-func (m headerRegexMatcher) Match(r *http.Request, match *RouteMatch) bool {
+func (m headerRegexMatcher) Match(r *gmhttp.Request, match *RouteMatch) bool {
 	return matchMapWithRegex(m, r.Header, true)
 }
 
@@ -308,10 +308,10 @@ func (r *Route) Host(tpl string) *Route {
 // MatcherFunc ----------------------------------------------------------------
 
 // MatcherFunc is the function signature used by custom matchers.
-type MatcherFunc func(*http.Request, *RouteMatch) bool
+type MatcherFunc func(*gmhttp.Request, *RouteMatch) bool
 
 // Match returns the match for a given request.
-func (m MatcherFunc) Match(r *http.Request, match *RouteMatch) bool {
+func (m MatcherFunc) Match(r *gmhttp.Request, match *RouteMatch) bool {
 	return m(r, match)
 }
 
@@ -325,7 +325,7 @@ func (r *Route) MatcherFunc(f MatcherFunc) *Route {
 // methodMatcher matches the request against HTTP methods.
 type methodMatcher []string
 
-func (m methodMatcher) Match(r *http.Request, match *RouteMatch) bool {
+func (m methodMatcher) Match(r *gmhttp.Request, match *RouteMatch) bool {
 	return matchInArray(m, r.Method)
 }
 
@@ -421,7 +421,7 @@ func (r *Route) Queries(pairs ...string) *Route {
 // schemeMatcher matches the request against URL schemes.
 type schemeMatcher []string
 
-func (m schemeMatcher) Match(r *http.Request, match *RouteMatch) bool {
+func (m schemeMatcher) Match(r *gmhttp.Request, match *RouteMatch) bool {
 	scheme := r.URL.Scheme
 	// https://golang.org/pkg/net/http/#Request
 	// "For [most] server requests, fields other than Path and RawQuery will be

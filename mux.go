@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitee.com/zhaochuninhefei/gmgo/gmhttp"
 	"net/http"
 	"path"
 	"regexp"
@@ -47,11 +48,11 @@ func NewRouter() *Router {
 type Router struct {
 	// Configurable Handler to be used when no route matches.
 	// This can be used to render your own 404 Not Found errors.
-	NotFoundHandler http.Handler
+	NotFoundHandler gmhttp.Handler
 
 	// Configurable Handler to be used when the request method does not match the route.
 	// This can be used to render your own 405 Method Not Allowed errors.
-	MethodNotAllowedHandler http.Handler
+	MethodNotAllowedHandler gmhttp.Handler
 
 	// Routes to be matched, in order.
 	routes []*Route
@@ -135,7 +136,7 @@ func copyRouteRegexp(r *routeRegexp) *routeRegexp {
 // will be filled in the match argument's MatchErr field. If the match failure type
 // (eg: not found) has a registered handler, the handler is assigned to the Handler
 // field of the match argument.
-func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
+func (r *Router) Match(req *gmhttp.Request, match *RouteMatch) bool {
 	for _, route := range r.routes {
 		if route.Match(req, match) {
 			// Build middleware chain if no error was found
@@ -172,7 +173,7 @@ func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
 //
 // When there is a match, the route variables can be retrieved calling
 // mux.Vars(request).
-func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (r *Router) ServeHTTP(w gmhttp.ResponseWriter, req *gmhttp.Request) {
 	if !r.skipClean {
 		path := req.URL.Path
 		if r.useEncodedPath {
@@ -194,7 +195,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	var match RouteMatch
-	var handler http.Handler
+	var handler gmhttp.Handler
 	if r.Match(req, &match) {
 		handler = match.Handler
 		req = requestWithVars(req, match.Vars)
@@ -206,7 +207,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if handler == nil {
-		handler = http.NotFoundHandler()
+		handler = gmhttp.NotFoundHandler()
 	}
 
 	handler.ServeHTTP(w, req)
@@ -291,14 +292,14 @@ func (r *Router) Name(name string) *Route {
 
 // Handle registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.Handler().
-func (r *Router) Handle(path string, handler http.Handler) *Route {
+func (r *Router) Handle(path string, handler gmhttp.Handler) *Route {
 	return r.NewRoute().Path(path).Handler(handler)
 }
 
 // HandleFunc registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.HandlerFunc().
-func (r *Router) HandleFunc(path string, f func(http.ResponseWriter,
-	*http.Request)) *Route {
+func (r *Router) HandleFunc(path string, f func(gmhttp.ResponseWriter,
+	*gmhttp.Request)) *Route {
 	return r.NewRoute().Path(path).HandlerFunc(f)
 }
 
@@ -410,7 +411,7 @@ func (r *Router) walk(walkFn WalkFunc, ancestors []*Route) error {
 // RouteMatch stores information about a matched route.
 type RouteMatch struct {
 	Route   *Route
-	Handler http.Handler
+	Handler gmhttp.Handler
 	Vars    map[string]string
 
 	// MatchErr is set to appropriate matching error
@@ -438,19 +439,19 @@ func Vars(r *http.Request) map[string]string {
 // This only works when called inside the handler of the matched route
 // because the matched route is stored in the request context which is cleared
 // after the handler returns.
-func CurrentRoute(r *http.Request) *Route {
+func CurrentRoute(r *gmhttp.Request) *Route {
 	if rv := r.Context().Value(routeKey); rv != nil {
 		return rv.(*Route)
 	}
 	return nil
 }
 
-func requestWithVars(r *http.Request, vars map[string]string) *http.Request {
+func requestWithVars(r *gmhttp.Request, vars map[string]string) *gmhttp.Request {
 	ctx := context.WithValue(r.Context(), varsKey, vars)
 	return r.WithContext(ctx)
 }
 
-func requestWithRoute(r *http.Request, route *Route) *http.Request {
+func requestWithRoute(r *gmhttp.Request, route *Route) *gmhttp.Request {
 	ctx := context.WithValue(r.Context(), routeKey, route)
 	return r.WithContext(ctx)
 }
@@ -599,10 +600,10 @@ func matchMapWithRegex(toCheck map[string]*regexp.Regexp, toMatch map[string][]s
 }
 
 // methodNotAllowed replies to the request with an HTTP status code 405.
-func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+func methodNotAllowed(w gmhttp.ResponseWriter, r *gmhttp.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
 // methodNotAllowedHandler returns a simple request handler
 // that replies to each request with a status code 405.
-func methodNotAllowedHandler() http.Handler { return http.HandlerFunc(methodNotAllowed) }
+func methodNotAllowedHandler() gmhttp.Handler { return gmhttp.HandlerFunc(methodNotAllowed) }
